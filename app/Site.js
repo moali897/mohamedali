@@ -82,7 +82,10 @@ function StreamVideo({ src, poster, tall }) {
     const isHls = src.endsWith('.m3u8');
     const play = () => v.play().catch(() => {});
 
-    if (!isHls || v.canPlayType('application/vnd.apple.mpegurl')) {
+    // Prefer hls.js wherever MediaSource exists (desktop + Android): it does real adaptive switching.
+    // Native HLS only where MSE isn't available (iPhone Safari), where it works well.
+    const hasMSE = typeof window !== 'undefined' && ('MediaSource' in window || 'ManagedMediaSource' in window);
+    if (!isHls || !hasMSE) {
       v.src = src;
       play();
     } else {
