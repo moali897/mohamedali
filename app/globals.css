@@ -120,11 +120,11 @@ button { font-family: inherit; }
 .field p, .step p { margin: 0; color: var(--muted); font-size: 14px; line-height: 1.8; }
 
 /* clients */
-.clients { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 1px; background: rgba(232,226,214,.08); border: 1px solid rgba(232,226,214,.08); border-radius: 14px; overflow: hidden; }
-.client { background: var(--bg); min-height: 130px; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 6px; padding: 18px; text-align: center; }
-.client b { font-family: var(--f-display), sans-serif; font-weight: 600; font-size: 18px; }
-.client span { font-size: 12px; color: #8E887D; }
-.client.gulfcell b { color: var(--accent); }
+.clients { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 1px; background: rgba(232,226,214,.08); border: 1px solid rgba(232,226,214,.08); border-radius: 14px; overflow: hidden; }
+.client { background: var(--bg); min-height: 180px; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 6px; padding: 18px; text-align: center; }
+.client b { font-family: var(--f-display), sans-serif; font-weight: 600; font-size: clamp(22px, 2.4vw, 32px); }
+.client:first-child b { color: var(--text); } .client:last-child b { color: var(--accent); }
+.client span { font-size: 14px; color: #8E887D; }
 
 /* process */
 .steps { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 14px; }
@@ -161,8 +161,11 @@ button { font-family: inherit; }
 .pl { position: fixed; inset: 0; z-index: 100; background: rgba(10,9,8,.97); display: flex; flex-direction: column; animation: plIn .35s ease both; }
 .plbar { display: flex; align-items: center; justify-content: space-between; gap: 16px; padding: 14px 24px; }
 .plmedia { flex: 1; min-height: 0; display: flex; align-items: center; justify-content: center; padding: 0 24px; }
+.vwrap { position: relative; display: flex; align-items: center; justify-content: center; width: 100%; height: 100%; }
 .plmedia video { max-width: 100%; max-height: 100%; border-radius: 10px; background: #000; animation: zoomIn .5s var(--ease) both; }
 .plmedia video:not(.tall) { width: 100%; }
+.spin { position: absolute; width: 44px; height: 44px; border-radius: 50%; border: 2px solid rgba(232,226,214,.18); border-top-color: var(--accent); animation: spin .8s linear infinite; pointer-events: none; }
+@keyframes spin { to { transform: rotate(360deg); } }
 .plinfo { display: flex; align-items: center; justify-content: space-between; gap: 16px; padding: 18px 24px 24px; }
 .plt { display: flex; flex-direction: column; gap: 6px; min-width: 0; }
 .plt .disp { font-size: 22px; font-weight: 600; }

@@ -10,10 +10,10 @@ import './globals.css';
 
 export const metadata = {
   metadataBase: new URL(process.env.NEXT_PUBLIC_SITE_URL || 'https://mohamedali.vercel.app'),
-  title: 'محمد علي — إعلانات بالذكاء الاصطناعي | AI Film Director',
+  title: 'Mohammed Ali — إعلانات بالذكاء الاصطناعي | AI Film Director',
   description: 'إعلانات سينمائية بالذكاء الاصطناعي لشركات في مصر والخليج: زراعة، رعاية صحية، منتجات وبراندات.',
   openGraph: {
-    title: 'محمد علي — إعلانات بالذكاء الاصطناعي',
+    title: 'Mohammed Ali — AI Film Director',
     description: 'إعلانات سينمائية بالذكاء الاصطناعي لشركات في مصر والخليج.',
     images: ['/og.jpg'],
     type: 'website',

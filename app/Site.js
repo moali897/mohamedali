@@ -1,7 +1,7 @@
 'use client';
 
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { T, CLIENTS, COURSE_URL, WHATSAPP_NUMBER, WHATSAPP_DISPLAY } from '../lib/i18n';
+import { T, COURSE_URL, WHATSAPP_NUMBER, WHATSAPP_DISPLAY } from '../lib/i18n';
 import { supabase } from '../lib/supabase';
 
 const FILTERS = ['all', 'agri', 'health', 'brand'];
@@ -62,6 +62,77 @@ function Card({ p, lang, t, index, onOpen }) {
   );
 }
 
+/* Adaptive streaming: native HLS on Safari/iOS, hls.js everywhere else, plain MP4 if the source is .mp4.
+   Starts at a low rendition so playback begins instantly, then climbs as bandwidth allows. */
+let hlsModule = null;
+export function warmHls() {
+  if (!hlsModule && typeof window !== 'undefined') hlsModule = import('hls.js');
+  return hlsModule;
+}
+
+function StreamVideo({ src, poster, tall }) {
+  const ref = useRef(null);
+  const [waiting, setWaiting] = useState(true);
+
+  useEffect(() => {
+    const v = ref.current;
+    if (!v) return;
+    let hls;
+    let cancelled = false;
+    const isHls = src.endsWith('.m3u8');
+    const play = () => v.play().catch(() => {});
+
+    if (!isHls || v.canPlayType('application/vnd.apple.mpegurl')) {
+      v.src = src;
+      play();
+    } else {
+      warmHls().then(({ default: Hls }) => {
+        if (cancelled) return;
+        if (!Hls.isSupported()) { v.src = src; play(); return; }
+        hls = new Hls({
+          capLevelToPlayerSize: true,
+          startLevel: -1,
+          abrEwmaDefaultEstimate: 1_200_000,
+          maxBufferLength: 20,
+          backBufferLength: 30,
+        });
+        hls.loadSource(src);
+        hls.attachMedia(v);
+        hls.on(Hls.Events.MANIFEST_PARSED, play);
+        hls.on(Hls.Events.ERROR, (_, data) => {
+          if (!data.fatal) return;
+          if (data.type === Hls.ErrorTypes.NETWORK_ERROR) hls.startLoad();
+          else if (data.type === Hls.ErrorTypes.MEDIA_ERROR) hls.recoverMediaError();
+          else hls.destroy();
+        });
+      });
+    }
+    return () => {
+      cancelled = true;
+      if (hls) hls.destroy();
+      v.removeAttribute('src');
+      v.load();
+    };
+  }, [src]);
+
+  return (
+    <div className={`vwrap${tall ? ' tall' : ''}`}>
+      <video
+        ref={ref}
+        poster={poster}
+        controls
+        playsInline
+        preload="auto"
+        className={tall ? 'tall' : ''}
+        onWaiting={() => setWaiting(true)}
+        onPlaying={() => setWaiting(false)}
+        onCanPlay={() => setWaiting(false)}
+      />
+      {waiting && <span className="spin" aria-hidden="true" />}
+    </div>
+  );
+}
+
 /* Full-screen player with prev / next, keyboard and swipe. */
 function Player({ list, index, setIndex, lang, t }) {
   const p = list[index];
@@ -116,7 +187,7 @@ function Player({ list, index, setIndex, lang, t }) {
         </button>
       </div>
       <div className="plmedia" onClick={(e) => e.target === e.currentTarget && close()}>
-        <video key={p.slug} src={p.video_url} poster={p.poster_url} controls autoPlay playsInline className={p.aspect === '9:16' ? 'tall' : ''} />
+        <StreamVideo key={p.slug} src={p.video_url} poster={p.poster_url} tall={p.aspect === '9:16'} />
       </div>
       <div className="plinfo">
         <div className="plt">
@@ -308,7 +379,7 @@ export default function Site({ projects }) {
                 ))}
               </div>
             </div>
-            <div className="grid" key={filter}>
+            <div className="grid" key={filter} onPointerEnter={warmHls} onTouchStart={warmHls}>
               {shown.map((p, i) => (
                 <Card key={p.slug} p={p} lang={lang} t={t} index={i} onOpen={setOpen} />
               ))}
@@ -342,16 +413,12 @@ export default function Site({ projects }) {
           <div className="wrap">
             <div className="sechead"><div><div className="mono">{t.clientsKicker}</div><h2 className="h2">{t.clientsTitle}</h2></div></div>
             <div className="clients">
-              {CLIENTS.map((c) => (
-                <div className="client" key={c.name_en}>
-                  <b>{lang === 'ar' ? c.name_ar : c.name_en}</b>
-                  <span>{c.region === 'egypt' ? t.egypt : t.gulf}</span>
+              {[t.clientsEgypt, t.clientsGulf].map(([b, sub]) => (
+                <div className="client" key={b}>
+                  <b>{b}</b>
+                  <span>{sub}</span>
                 </div>
               ))}
-              <div className="client gulfcell">
-                <b>{lang === 'ar' ? '+ عملاء في الخليج' : '+ Clients across the GCC'}</b>
-                <span>{lang === 'ar' ? 'السعودية · الإمارات · الكويت · قطر' : 'KSA · UAE · Kuwait · Qatar'}</span>
-              </div>
             </div>
           </div>
         </section>
@@ -380,7 +447,7 @@ export default function Site({ projects }) {
                 <h2 className="h2 m0">{t.courseTitle}</h2>
                 <p className="muted lh">{t.courseSub}</p>
                 <ul>{t.courseList.map((x) => <li key={x}>{x}</li>)}</ul>
-                <a className="btn solid self" href={COURSE_URL}>{t.courseCta}</a>
+                <a className="btn solid self" href={COURSE_URL} target="_blank" rel="noopener noreferrer">{t.courseCta}</a>
               </div>
             </div>
           </div>
@@ -397,7 +464,7 @@ export default function Site({ projects }) {
 
       <footer className="wrap">
         <div className="foot">
-          <span>© {new Date().getFullYear()} {t.brand} · Beitkum Digital · {t.rights}</span>
+          <span>© {new Date().getFullYear()} {t.brand} · {t.rights}</span>
           <a href={wa} target="_blank" rel="noopener noreferrer" dir="ltr">WhatsApp {WHATSAPP_DISPLAY}</a>
         </div>
       </footer>
