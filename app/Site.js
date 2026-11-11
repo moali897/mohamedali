@@ -147,12 +147,19 @@ function ContactForm({ t, lang }) {
     const message = String(fd.get('message') || '').trim();
     if (!name || !phone) return;
     setState('sending');
-    let ok = true;
+    let ok = false;
     if (supabase) {
       const { error } = await supabase.from('leads').insert({ name, phone, message: message || null, lang });
       ok = !error;
     }
-    setState(ok ? 'ok' : 'err');
+    if (!ok) {
+      // no database available — hand the message to WhatsApp so the lead is never lost
+      const text = `${t.waText}\n${name} — ${phone}${message ? `\n${message}` : ''}`;
+      window.open(waLink(text), '_blank', 'noopener');
+      setState('idle');
+      return;
+    }
+    setState('ok');
     if (ok) form.reset();
   }
   return (
